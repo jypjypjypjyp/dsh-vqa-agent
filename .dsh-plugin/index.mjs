@@ -247,11 +247,12 @@ export function apply(ctx) {
         type: 'object',
         additionalProperties: false,
         properties: {
-          answer: { type: 'string', required: true },
-          visionModel: { type: 'string', required: true },
-          exchangeId: { type: 'string', required: true },
-          conversationId: { type: 'string', required: true },
+          answer: { type: 'string' },
+          visionModel: { type: 'string' },
+          exchangeId: { type: 'string' },
+          conversationId: { type: 'string' },
         },
+        required: ['answer', 'visionModel', 'exchangeId', 'conversationId'],
       },
       render(args, value) {
         return [{ type: 'text', text: '[视觉模型 ' + value.visionModel + '] ' + value.answer }]
