@@ -1,5 +1,5 @@
 // ============================================================================
-// vqa-dual-agent · 浏览器 half(官方 bundle 契约)
+// dsh-vqa-agent · 浏览器 half(官方 bundle 契约)
 // 由 esbuild 打包为 CJS 并包上 __ModuleLoader__.load({id, factory}),
 // factory 返回 { name, apply };内核挂载时调用 apply(ctx)。
 // 与 Node half 的通信走 webServer 路由(fetch POST),不再用动态插件的 host.call。
@@ -7,7 +7,7 @@
 // ============================================================================
 import React from 'react'
 
-const ROUTE_PREFIX = '/vqa-dual-agent'
+const ROUTE_PREFIX = '/dsh-vqa-agent'
 
 async function postJSON(path, body = {}) {
   try {
@@ -49,7 +49,7 @@ function extractContentText(block) {
   }
 }
 
-export const name = 'vqa-dual-agent'
+export const name = 'dsh-vqa-agent'
 
 export function apply(ctx) {
   // ---- 样式注入(卸载时移除) ----

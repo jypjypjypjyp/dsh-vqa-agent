@@ -1,5 +1,5 @@
 window.__ModuleLoader__.load({
-	id: "vqa-dual-agent",
+	id: "dsh-vqa-agent",
 	factory: (require) => {
 		var module = { exports: {} };
 		var exports = module.exports;
@@ -39,7 +39,7 @@ __export(index_exports, {
 });
 module.exports = __toCommonJS(index_exports);
 var import_react = __toESM(require("react"), 1);
-var ROUTE_PREFIX = "/vqa-dual-agent";
+var ROUTE_PREFIX = "/dsh-vqa-agent";
 async function postJSON(path, body = {}) {
   try {
     const res = await fetch(ROUTE_PREFIX + path, {
@@ -72,7 +72,7 @@ function extractContentText(block) {
     return "";
   }
 }
-var name = "vqa-dual-agent";
+var name = "dsh-vqa-agent";
 function apply(ctx) {
   const styleEl = document.createElement("style");
   styleEl.textContent = `

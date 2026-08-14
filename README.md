@@ -1,4 +1,4 @@
-# vqa-dual-agent
+# dsh-vqa-agent
 
 DSH Web 插件(官方 bundle 形态):主模型调用 `vqa_ask` 向**视觉模型**提问,图片字节真实送达视觉模型,UI 实时展示「主模型提问 → 视觉模型回答」的 QA 过程;主设置提供多模态视觉模型选择页。
 
@@ -24,9 +24,9 @@ node scripts/build-client.mjs --check   # 校验产物与源码一致
 ## 安装到 DSH Web profile
 
 1. 在 `/Users/a1234/.dsh/profiles/web/package.json`:
-   - `dependencies` 增加 `"vqa-dual-agent": "file:<本仓库路径>"`
-   - `dsh.profile.bundles` 增加 `"vqa-dual-agent"`
-2. 在 profile 目录执行 `pnpm install`(或 `pnpm add vqa-dual-agent@file:<路径>`)。
+   - `dependencies` 增加 `"dsh-vqa-agent": "file:<本仓库路径>"`
+   - `dsh.profile.bundles` 增加 `"dsh-vqa-agent"`
+2. 在 profile 目录执行 `pnpm install`(或 `pnpm add dsh-vqa-agent@file:<路径>`)。
 3. 重启 web 服务并刷新页面。
 
 也可以把本仓库推到 GitHub/GitLab 后用 git 依赖(参考 whale-girl 的 `github:vlln/whale-girl#main`)。
@@ -34,11 +34,11 @@ node scripts/build-client.mjs --check   # 校验产物与源码一致
 ## 通信契约
 
 - Node ↔ 浏览器:`webServer` 路由(全部 `POST` JSON):
-  - `/vqa-dual-agent/exchange` `{callId}` — 单次问答快照(轮询,流式)
-  - `/vqa-dual-agent/image` `{convKey}` — 图片 dataURL(每会话拉一次)
-  - `/vqa-dual-agent/transcript` `{}` — 全部会话 QA 记录
-  - `/vqa-dual-agent/settings` `{}` — 当前选择 + 多模态模型列表
-  - `/vqa-dual-agent/set-model` `{provider, model}` — 设置页选择视觉模型
+  - `/dsh-vqa-agent/exchange` `{callId}` — 单次问答快照(轮询,流式)
+  - `/dsh-vqa-agent/image` `{convKey}` — 图片 dataURL(每会话拉一次)
+  - `/dsh-vqa-agent/transcript` `{}` — 全部会话 QA 记录
+  - `/dsh-vqa-agent/settings` `{}` — 当前选择 + 多模态模型列表
+  - `/dsh-vqa-agent/set-model` `{provider, model}` — 设置页选择视觉模型
 - 浏览器 half 由 `__ModuleLoader__.load({id, factory})` 挂载,`React` 经种子词 `require("react")` 解析(esbuild `--external:react`),样式直接注入 DOM。
 
 ## 功能

@@ -1,5 +1,5 @@
-# vqa-dual-agent bundle patch:向 web 组合挂载 vqa-dual-agent(Node half 注册 vqa_ask 工具与 webServer 路由,
+# dsh-vqa-agent bundle patch:向 web 组合挂载 dsh-vqa-agent(Node half 注册 vqa_ask 工具与 webServer 路由,
 # client half 由 __ModuleLoader__ 内核挂载渲染工具卡片/QA 面板/设置页)。
 - insert:
-    - id: vqa-dual-agent
-      name: vqa-dual-agent
+    - id: dsh-vqa-agent
+      name: dsh-vqa-agent

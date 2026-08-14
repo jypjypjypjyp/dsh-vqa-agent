@@ -1,19 +1,19 @@
 // ============================================================================
-// vqa-dual-agent · Node half(官方 bundle 形态,whale-girl 同款契约)
+// dsh-vqa-agent · Node half(官方 bundle 形态,whale-girl 同款契约)
 // 功能:
 //   1) 注册模型工具 vqa_ask:读图片字节(魔数嗅探真实格式)→ attachments 生成引用
 //      → llm.stream 把图片发给视觉模型 → 流式回答;同图追问自动带上下文。
 //   2) webServer 路由(浏览器 half 经 fetch 轮询):
-//      POST /vqa-dual-agent/exchange     {callId}           单次问答快照
-//      POST /vqa-dual-agent/image        {convKey}          图片 dataURL
-//      POST /vqa-dual-agent/transcript   {}                 全部会话转录
-//      POST /vqa-dual-agent/settings     {}                 当前选择 + 多模态模型列表
-//      POST /vqa-dual-agent/set-model    {provider, model}  设置页选择视觉模型
+//      POST /dsh-vqa-agent/exchange     {callId}           单次问答快照
+//      POST /dsh-vqa-agent/image        {convKey}          图片 dataURL
+//      POST /dsh-vqa-agent/transcript   {}                 全部会话转录
+//      POST /dsh-vqa-agent/settings     {}                 当前选择 + 多模态模型列表
+//      POST /dsh-vqa-agent/set-model    {provider, model}  设置页选择视觉模型
 // ============================================================================
-export const name = 'vqa-dual-agent'
+export const name = 'dsh-vqa-agent'
 export const inject = ['tools', 'llm', 'attachments', 'fs', 'webServer']
 
-const ROUTE_PREFIX = '/vqa-dual-agent'
+const ROUTE_PREFIX = '/dsh-vqa-agent'
 const BODY_LIMIT = 256 * 1024
 
 function bytesToBase64(u8) {

@@ -34,7 +34,7 @@ export function generate({ check = false, root = ROOT } = {}) {
   if (esbuildBin === null) {
     return { ok: false, errors: ['esbuild 不可用:在仓库内执行 npm i -D esbuild'] }
   }
-  const tmpDir = mkdtempSync(join(tmpdir(), 'vqa-dual-agent-'))
+  const tmpDir = mkdtempSync(join(tmpdir(), 'dsh-vqa-agent-'))
   const tmpOut = join(tmpDir, 'client.js')
   const res = spawnSync(
     esbuildBin,
@@ -55,7 +55,7 @@ export function generate({ check = false, root = ROOT } = {}) {
   const body = readFileSync(tmpOut, 'utf8')
   const code = Buffer.from(
     `window.__ModuleLoader__.load({\n`
-    + `\tid: "vqa-dual-agent",\n`
+    + `\tid: "dsh-vqa-agent",\n`
     + `\tfactory: (require) => {\n`
     + `\t\tvar module = { exports: {} };\n`
     + `\t\tvar exports = module.exports;\n`
