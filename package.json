@@ -1,0 +1,40 @@
+{
+  "name": "vqa-dual-agent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "vqa_ask 双模型视觉问答插件:主模型调用 vqa_ask 向视觉模型提问(图片字节真实送达),UI 实时展示\"主模型提问 → 视觉模型回答\"的 QA 过程,并在主设置提供多模态视觉模型选择页。",
+  "main": "./.dsh-plugin/index.mjs",
+  "exports": {
+    ".": "./.dsh-plugin/index.mjs",
+    "./client": "./.dsh-plugin/client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
+    }
+  },
+  "files": [
+    ".dsh-plugin/index.mjs",
+    ".dsh-plugin/client.js",
+    ".dsh-plugin/client",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "scripts": {
+    "build:client": "node scripts/build-client.mjs",
+    "check:client": "node scripts/build-client.mjs --check"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.12"
+  },
+  "license": "MIT",
+  "allowScripts": {
+    "esbuild@0.25.12": true
+  }
+}
