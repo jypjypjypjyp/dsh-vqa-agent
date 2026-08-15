@@ -339,7 +339,7 @@ function apply(ctx) {
       postJSON("/set-model", { provider, model }).then((res) => {
         setBusy(false);
         if (res && res.ok) {
-          setMsg({ ok: true, text: "\u5DF2\u5E94\u7528: " + provider + " / " + model });
+          setMsg({ ok: true, text: (res.persisted ? "\u5DF2\u5E94\u7528\u5E76\u4FDD\u5B58: " : "\u5DF2\u5E94\u7528(\u4EC5\u672C\u6B21\u8FD0\u884C): ") + provider + " / " + model });
           setState((prev) => prev ? { ...prev, provider, model } : prev);
         } else {
           setMsg({ ok: false, text: res && res.error || "\u8BBE\u7F6E\u5931\u8D25" });
@@ -379,7 +379,7 @@ function apply(ctx) {
       import_react.default.createElement(
         "div",
         { className: "vqa-settings-list" },
-        "\u5F53\u524D\u53EF\u7528\u591A\u6A21\u6001\u6A21\u578B: " + total + " \u4E2A;\u9009\u62E9\u4FDD\u5B58\u5728\u8FDB\u7A0B\u5185,\u91CD\u542F\u540E\u6062\u590D\u9ED8\u8BA4(qwen3.7-plus)\u3002"
+        "\u5F53\u524D\u53EF\u7528\u591A\u6A21\u6001\u6A21\u578B: " + total + " \u4E2A;\u9009\u62E9\u4F1A\u5199\u5165 settings.yaml \u7684 vqa \u914D\u7F6E,\u91CD\u542F\u540E\u4ECD\u7136\u8BB0\u4F4F\u3002"
       )
     );
   }

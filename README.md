@@ -46,8 +46,8 @@ node scripts/build-client.mjs --check   # 校验产物与源码一致
 - 工具 `vqa_ask(image, question, model?, provider?, maxTokens?)`:读文件 → 魔数嗅探真实格式(PNG/JPEG/WebP/GIF,不信扩展名)→ attachments 生成引用 → 图片发给视觉模型 → 流式回答;同图追问自动带上下文。
 - 工具卡片(`tool.call.toolview` key `vqa_ask`):主模型提问气泡 + 视觉模型回答气泡 + 缩略图 + 状态徽标(固定深色底,明暗主题均清晰)。
 - Run 面板(`tool.view.cordis` key `self`):「双模型 QA 过程」总览。
-- 设置页(`settings.section` id `vqa-vision`):从所有提供方中选多模态模型作视觉模型(进程内存,重启恢复默认)。
+- 设置页(`settings.section` id `vqa-vision`):从所有提供方中选多模态模型作视觉模型,选择通过 settings 服务写入 `settings.yaml` 的 `vqa: {provider, model}` 分节持久保存,重启后仍记住。
 
 ## 默认视觉模型解析顺序
 
-设置页选择 → VQA 配置(`settings.get('vqa')` 的 provider/model)→ 内置默认 `momenta-gateway` / `qwen3.7-plus`。
+设置页选择 → VQA 配置(`settings.yaml` 的 `vqa: {provider, model}`)→ 内置默认 `momenta-gateway` / `qwen3.7-plus`。

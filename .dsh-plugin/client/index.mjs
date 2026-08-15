@@ -294,7 +294,7 @@ export function apply(ctx) {
       postJSON('/set-model', { provider, model }).then((res) => {
         setBusy(false)
         if (res && res.ok) {
-          setMsg({ ok: true, text: '已应用: ' + provider + ' / ' + model })
+          setMsg({ ok: true, text: (res.persisted ? '已应用并保存: ' : '已应用(仅本次运行): ') + provider + ' / ' + model })
           setState((prev) => prev ? { ...prev, provider, model } : prev)
         } else {
           setMsg({ ok: false, text: (res && res.error) || '设置失败' })
@@ -318,7 +318,7 @@ export function apply(ctx) {
       ),
       msg.text ? React.createElement('div', { className: 'vqa-settings-msg ' + (msg.ok ? 'vqa-settings-ok' : 'vqa-settings-err') }, msg.text) : null,
       React.createElement('div', { className: 'vqa-settings-list' },
-        '当前可用多模态模型: ' + total + ' 个;选择保存在进程内,重启后恢复默认(qwen3.7-plus)。'),
+        '当前可用多模态模型: ' + total + ' 个;选择会写入 settings.yaml 的 vqa 配置,重启后仍然记住。'),
     )
   }
 

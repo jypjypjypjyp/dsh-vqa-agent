@@ -10,6 +10,8 @@
 //      POST /dsh-vqa-agent/settings     {}                 当前选择 + 多模态模型列表
 //      POST /dsh-vqa-agent/set-model    {provider, model}  设置页选择视觉模型
 // ============================================================================
+import z from 'schemastery'
+
 export const name = 'dsh-vqa-agent'
 export const inject = ['tools', 'llm', 'attachments', 'fs', 'webServer']
 
@@ -73,9 +75,38 @@ async function readBody(req, limit = BODY_LIMIT) {
 export function apply(ctx) {
   const convs = new Map()
   const byCallId = new Map()
-  // 用户在设置页选择的视觉模型(进程内存,重启恢复默认)
+  // 用户在设置页选择的视觉模型(进程内即时生效;set-model 同时持久化到 vqa 配置)
   let selectedVision = null
   let seq = 0
+
+  // vqa 配置(settings.yaml 的 `vqa:` 分节),使默认视觉模型可持久配置
+  let vqaSettings = null
+  let vqaScope = null
+  let settingsSeam = null
+  try { settingsSeam = ctx.get('settings') } catch (e) { /* settings 服务可选 */ }
+  if (settingsSeam && typeof settingsSeam.register === 'function') {
+    try {
+      const scope = settingsSeam.register('vqa', z.object({
+        provider: z.string().default(''),
+        model: z.string().default(''),
+      }), { applies: 'live' })
+      vqaScope = scope
+      vqaSettings = scope.get()
+      scope.watch((next) => { vqaSettings = next })
+    } catch (e) { /* vqa 命名空间可能已由其它插件注册 */ }
+  }
+
+  // 把设置页选择的视觉模型写入 settings.yaml 的 `vqa:` 分节(用户分节持久化)。
+  async function persistVision(provider, model) {
+    if (!vqaScope || typeof vqaScope.update !== 'function') return false
+    try {
+      await vqaScope.update({ provider, model })
+      const cur = vqaScope.get()
+      return !!cur && typeof cur === 'object' && cur.provider === provider && cur.model === model
+    } catch (e) {
+      return false
+    }
+  }
 
   // 解析当前默认视觉模型:设置页选择 > vqa 配置 > 内置默认
   function visionDefaults() {
@@ -84,15 +115,20 @@ export function apply(ctx) {
     }
     let provider = 'momenta-gateway'
     let model = 'qwen3.7-plus'
-    const settings = ctx.get('settings')
-    if (settings) {
-      try {
-        const cfg = settings.get('vqa')
-        if (cfg && typeof cfg === 'object') {
-          if (typeof cfg.provider === 'string' && cfg.provider) provider = cfg.provider
-          if (typeof cfg.model === 'string' && cfg.model) model = cfg.model
-        }
-      } catch (e) { /* vqa 命名空间可能未注册 */ }
+    if (vqaSettings && typeof vqaSettings === 'object') {
+      if (typeof vqaSettings.provider === 'string' && vqaSettings.provider) provider = vqaSettings.provider
+      if (typeof vqaSettings.model === 'string' && vqaSettings.model) model = vqaSettings.model
+    } else {
+      const settings = ctx.get('settings')
+      if (settings) {
+        try {
+          const cfg = settings.get('vqa')
+          if (cfg && typeof cfg === 'object') {
+            if (typeof cfg.provider === 'string' && cfg.provider) provider = cfg.provider
+            if (typeof cfg.model === 'string' && cfg.model) model = cfg.model
+          }
+        } catch (e) { /* vqa 命名空间可能未注册 */ }
+      }
     }
     return { provider, model }
   }
@@ -220,8 +256,9 @@ export function apply(ctx) {
         const provider = body && typeof body.provider === 'string' && body.provider ? body.provider : null
         const model = body && typeof body.model === 'string' && body.model ? body.model : null
         if (!provider || !model) return json(res, 400, { error: 'provider 和 model 不能为空' })
+        const persisted = await persistVision(provider, model)
         selectedVision = { provider, model }
-        return json(res, 200, { ok: true, provider, model })
+        return json(res, 200, { ok: true, provider, model, persisted })
       },
     }))
   }
