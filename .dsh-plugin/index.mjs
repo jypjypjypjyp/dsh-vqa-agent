@@ -13,7 +13,7 @@
 import z from 'schemastery'
 
 export const name = 'dsh-vqa-agent'
-export const inject = ['tools', 'llm', 'attachments', 'fs', 'webServer']
+export const inject = ['tools', 'llm', 'attachments', 'fs', 'webServer', 'settings']
 
 const ROUTE_PREFIX = '/dsh-vqa-agent'
 const BODY_LIMIT = 256 * 1024
