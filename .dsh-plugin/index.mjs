@@ -275,7 +275,7 @@ export function apply(ctx) {
         question: { type: 'string', description: '要问视觉模型的问题,例如"这张图里有什么?"' },
         model: { type: 'string', description: '视觉模型 id(覆盖设置页的选择),例如 qwen3.7-plus、deepseek-v4-flash' },
         provider: { type: 'string', description: '模型提供方路由(覆盖设置页的选择)' },
-        maxTokens: { type: 'integer', description: '回答的最大 token 数(默认 1024)' },
+        maxTokens: { type: 'integer', description: '回答的最大 token 数(硬上限;对思考型视觉模型传太小会导致空回答——建议 >= 4096;不传则使用模型默认)' },
       },
       required: ['image', 'question'],
     },
@@ -303,7 +303,11 @@ export function apply(ctx) {
       const def = visionDefaults()
       const provider = typeof args.provider === 'string' && args.provider ? args.provider : def.provider
       const model = typeof args.model === 'string' && args.model ? args.model : def.model
+      // 调用方显式指定了 provider/model:若该模型未配置或不能看图,回退到配置默认
+      const callerSpecified = !!(args.provider || args.model)
       const maxTokens = typeof args.maxTokens === 'number' && args.maxTokens > 0 ? Math.floor(args.maxTokens) : undefined
+      let usedProvider = provider
+      let usedModel = model
 
       // 相对路径基于会话工作区(cwd)解析;绝对路径原样使用
       let base
@@ -359,29 +363,88 @@ export function apply(ctx) {
         source: { kind: 'user' },
       })
 
-      try {
-        const stream = ctx.llm.stream({ provider, model, messages, maxTokens, signal: exec.signal })
+      // 单次流式调用:收集回答与结束原因。空回答不能算成功——两种已知成因:
+      //   1) 提供方偶发"零文本"完成(flash 模型瞬时空响应);
+      //   2) 思考型模型(如 dashscope qwen3.7-flash)在 maxTokens 上限过小时,
+      //      把整个预算花在思考上,产出空的 content(正常 stop、无任何报错)。
+      // 若静默当作成功,UI 会显示"已回答"但气泡为空,主模型也拿不到任何内容。
+      const attemptVision = async (p, m, mt) => {
+        const opts = { provider: p, model: m, messages, signal: exec.signal }
+        if (mt !== undefined) opts.maxTokens = mt
+        const stream = ctx.llm.stream(opts)
+        let answer = ''
+        let kind = null
+        let failure = null
         for await (const chunk of stream) {
           if (chunk.type === 'text-delta') {
-            item.answer += chunk.text
+            answer += chunk.text
           } else if (chunk.type === 'finish') {
-            if (chunk.reason && (chunk.reason.kind === 'error' || chunk.reason.kind === 'aborted')) {
-              item.status = 'error'
-              item.error = chunk.reason.failure ? (chunk.reason.failure.message || String(chunk.reason.kind)) : String(chunk.reason.kind)
-            } else if (item.status === 'asking') {
-              item.status = 'answered'
+            kind = chunk.reason ? chunk.reason.kind : null
+            if (kind === 'error' || kind === 'aborted') {
+              failure = chunk.reason.failure ? (chunk.reason.failure.message || String(kind)) : String(kind)
             }
           }
         }
-        if (item.status === 'asking') item.status = 'answered'
-        conv.history.push({
-          id: 'msg' + (++seq), role: 'user',
-          content: [{ type: 'text', text: question }], source: { kind: 'user' },
-        })
-        conv.history.push({
-          id: 'msg' + (++seq), role: 'assistant',
-          content: [{ type: 'text', text: item.answer }], source: { kind: 'model', provider, model },
-        })
+        return { answer, kind, failure }
+      }
+
+      // 配置类错误:模型未配置 / 不支持图片输入 / 模型不存在
+      const isConfigError = (msg) => /no configured model|does not support image input|model .*?not found|unknown model|unsupported model/i.test(msg || '')
+
+      try {
+        let outcome = await attemptVision(provider, model, maxTokens)
+        const aborted = !!(exec.signal && exec.signal.aborted)
+        const empty = !outcome.failure && !outcome.answer.trim()
+        const truncated = !outcome.failure && outcome.kind === 'max-tokens'
+        // 空回答 / 设了上限却被截断 → 去掉 maxTokens 上限重试一次
+        // (显式失败或已中止不重试;去掉上限是修复 dashscope 思考模型小上限空回答的关键)
+        if (!aborted && (empty || (maxTokens !== undefined && truncated))) {
+          outcome = await attemptVision(provider, model, undefined)
+        }
+        // 调用方显式指定了模型,但该模型要么报配置类错误(未配置 / 不支持图片),
+        // 要么静默返回空回答 → 回退到配置的默认视觉模型再试一次
+        const stillEmpty = !outcome.failure && !outcome.answer.trim()
+        const wantFallback = callerSpecified && (def.provider !== provider || def.model !== model) && (
+          (outcome.failure && isConfigError(outcome.failure)) ||
+          (!outcome.failure && stillEmpty)
+        )
+        if (!aborted && wantFallback) {
+          const reason = outcome.failure ? outcome.failure : '返回了空回答(重试后仍为空)'
+          const fb = await attemptVision(def.provider, def.model, undefined)
+          // 回退也算成功,需要:无显式失败 && 非 max-tokens 截断 && 非空
+          // (截断的"部分回答"不能当成功——调用方指定的模型已经失败过一次了)
+          if (!fb.failure && fb.kind !== 'max-tokens' && fb.answer.trim()) {
+            usedProvider = def.provider
+            usedModel = def.model
+            outcome = fb
+          } else {
+            const fbDetail = fb.failure ? ':' + fb.failure : (fb.kind === 'max-tokens' ? '(回答被 max-tokens 截断)' : '')
+            item.error = '视觉模型 ' + model + ' ' + reason + ';回退到 ' + def.model + ' 也失败' + fbDetail
+          }
+        }
+        item.answer = outcome.answer
+        if (outcome.failure) {
+          item.status = 'error'
+          item.error = item.error || outcome.failure
+        } else if (!item.answer.trim()) {
+          item.status = 'error'
+          item.error = item.error || (aborted
+            ? '视觉模型调用已中止'
+            : '视觉模型 ' + usedModel + ' 返回了空回答(已自动去掉 maxTokens 上限重试仍为空),请重试')
+        } else {
+          item.status = 'answered'
+        }
+        if (item.status === 'answered') {
+          conv.model = usedModel
+          conv.history.push({
+            id: 'msg' + (++seq), role: 'user',
+            content: [{ type: 'text', text: question }], source: { kind: 'user' },
+          })
+          conv.history.push({
+            id: 'msg' + (++seq), role: 'assistant',
+            content: [{ type: 'text', text: item.answer }], source: { kind: 'model', provider: usedProvider, model: usedModel },
+          })
+        }
       } catch (err) {
         item.status = 'error'
         item.error = err && err.message ? err.message : String(err)
@@ -390,7 +453,7 @@ export function apply(ctx) {
       if (item.status === 'error') throw new Error(item.error || '视觉模型调用失败')
       return {
         answer: item.answer,
-        visionModel: model,
+        visionModel: usedModel,
         exchangeId: itemId,
         conversationId: displayPath,
       }
